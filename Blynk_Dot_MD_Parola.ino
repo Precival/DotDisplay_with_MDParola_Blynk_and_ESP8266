@@ -14,6 +14,11 @@
 
 #include "Font_SPECIAL.h"
 
+#define VIRTUAL_MSG V0
+#define VIRTUAL_ILUMINATION V1
+#define VIRTUAL_TEMPERATURE V2
+#define VIRTUAL_HUMIDITY V3
+
 #define SPEED_TIME 25 // 75
 #define PAUSE_TIME 0
 
@@ -59,18 +64,47 @@ void updateDisplay();
 BLYNK_CONNECTED()
 {
   rtc.begin();
+  Blynk.syncAll();
+  digitalWrite(16, HIGH);
 }
 
-BLYNK_WRITE(V0)
+BLYNK_APP_DISCONNECTED()
+{
+  digitalWrite(16, LOW);
+}
+
+BLYNK_WRITE(VIRTUAL_MSG)
 {
   String msgApp = param.asStr();
   saveMsg(&msgApp);
   buildMsg_custom(&msgApp);
 }
 
+void sendDataToBlynkApp()
+{
+  temperatureDHT = 15.5;
+  humidityDHT = 16.80;
+};
+
+BLYNK_WRITE(VIRTUAL_ILUMINATION)
+{
+  int ilumination = param.asInt();
+  if (ilumination <= 100 && ilumination >= 0)
+  {
+    int ilumValue = map(ilumination, 0, 100, 0, 15);
+    P.setIntensity(0, ilumValue);
+    P.setIntensity(1, ilumValue);
+    P.displayReset(0);
+    P.displayReset(1);
+  }
+  Serial.print("Ilu: ");
+  Serial.println(ilumination);
+}
+
 void setup()
 {
   pinMode(2, OUTPUT);
+  pinMode(16, OUTPUT);
   EEPROM.begin(128);
   Serial.begin(115200);
   Blynk.begin(auth, ssid, pass);
@@ -93,11 +127,13 @@ void setup()
     P.setZone(0, 0, 9);
     P.setZone(1, 10, 15);
     P.setIntensity(0, 0);
-    P.setIntensity(1, 7);
+    P.setIntensity(1, 0);
     P.displayZoneText(0, msg_custom, PA_CENTER, SPEED_TIME, 0, PA_PRINT, PA_SCROLL_LEFT);
     P.displayZoneText(1, msg_time, PA_CENTER, SPEED_TIME, PAUSE_TIME, PA_PRINT, PA_NO_EFFECT);
     P.addChar(0, '$', degC); // °C
     P.setFont(1, special);
+
+    //timer.setInterval(1000L,sendDataToBlynkApp);
   }
 
   digitalWrite(2, HIGH);
@@ -109,6 +145,7 @@ void setup()
 void loop()
 {
   Blynk.run();
+  timer.run();
   P.displayAnimate();
   if (P.getZoneStatus(0))
   {
@@ -144,6 +181,13 @@ void loop()
     digitalWrite(2, HIGH);
     lastReadingDHT = millis();
     buildMsg_DateAndDHT();
+
+    sendDataToBlynkApp();
+
+    Blynk.virtualWrite(VIRTUAL_TEMPERATURE, temperatureDHT);
+    Blynk.virtualWrite(VIRTUAL_HUMIDITY, humidityDHT);
+    Blynk.syncVirtual(VIRTUAL_TEMPERATURE, VIRTUAL_HUMIDITY);
+
     digitalWrite(2, LOW);
   }
 }
