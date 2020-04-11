@@ -15,6 +15,8 @@
 #define VIRTUAL_ILUMINATION V1
 #define VIRTUAL_TEMPERATURE V2
 #define VIRTUAL_HUMIDITY V3
+#define VIRTUAL_EFFECT V4
+#define VIRTUAL_EFFECT_SPEED V5
 
 #define MAX_DEVICES 16                    // Number of modules connected
 #define CLK_PIN 14                        // or SCK
@@ -24,17 +26,129 @@
 #define SPEED_TIME 25
 #define PAUSE_TIME 0
 
+class IconAnimation
+{
+private:
+  unsigned int iconID;
+  unsigned int vBarState;
+  String icon;
+
+public:
+  IconAnimation()
+  {
+    iconID = 0;
+    vBarState = 0;
+    icon = "";
+  }
+  void setIconID(int id) // 0-> hourglass animation 1-> icon fixed
+  {
+    iconID = id;
+  }
+  String getNewIcon()
+  {
+    if (iconID == 0) // Hourglass animation
+    {
+      switch (vBarState)
+      {
+      case 0:
+        icon = String("j"); // rotate
+        vBarState++;
+        break;
+      case 1: // first decrement
+        icon = String("k");
+        vBarState++;
+        break;
+      case 2: // second decrement
+        icon = String("l");
+        vBarState++;
+        break;
+      case 3: // third decrement
+        icon = String("m");
+        vBarState++;
+        break;
+      case 4:
+        icon = String("n");
+        vBarState++;
+        break;
+      case 5:
+        icon = String("o");
+        vBarState++;
+        break;
+      case 6:
+        icon = String("p");
+        vBarState++;
+        break;
+      case 7:
+        icon = String("q");
+        vBarState++;
+        break;
+      case 8:
+        icon = String("r");
+        vBarState++;
+        break;
+      case 9:
+        icon = String("s");
+        vBarState++;
+        break;
+      case 10:
+        icon = String("t");
+        vBarState++;
+        break;
+      case 11:
+        icon = String("u");
+        vBarState++;
+        break;
+      case 12:
+        icon = String("v");
+        vBarState++;
+        break;
+      case 13:
+        icon = String("w");
+        vBarState++;
+        break;
+      case 14:
+        icon = String("x");
+        vBarState++;
+        break;
+      case 15:
+        icon = String("y");
+        vBarState++;
+        break;
+      case 16:
+        icon = String("z");
+        vBarState++;
+        break;
+      default:
+        icon = String("{");
+        vBarState = 0;
+        break;
+      }
+    }
+    else // Fixed icon
+    {
+      icon = String("W"); //
+      vBarState = 0;      // reset the hourglass animation
+    }
+    return icon;
+  }
+};
+
+// // // // / // //
+
 // < Global variables >
 // Display config
 MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 MD_MAX72XX::fontType_t *defaultFont;
+inline bool isSleepTime()
+{ // working from 6h30 to 22h00
+  return ((60 * hour() + minute() < 390) || hour() > 22);
+}
 
 // Animation display config
 unsigned long lastMoved = 0;
 unsigned long lastReadingDHT = 0;
 unsigned long changeMSG = 0;
 unsigned int holdTimeMSG = 0;
-unsigned int vBarState = 0;
 bool firstTimeToShow = false;
 bool blinkTime = false;
 
@@ -67,11 +181,14 @@ String recoverMsg();
 void buildMsg_custom();
 void buildMsg_time();
 void buildMsg_DateAndDHT(String *msgFromApp);
+void changeAnimation(int iconID);
+IconAnimation iconAnimation;
 
 // Apply changes when needed
-void actDisplay0_run();
-void actDisplay1_run();
+void actDisplayZone1_run();
+void actDisplayZone0_run();
 void readingDHT_run();
+
 // < Global functions />
 
 // < Blynk functions >
@@ -99,29 +216,59 @@ BLYNK_WRITE(VIRTUAL_ILUMINATION)
     int ilumValue = map(ilumination, 0, 100, 0, 15);
     P.setIntensity(0, ilumValue);
     P.setIntensity(1, ilumValue);
-    P.displayReset(0);
-    P.displayReset(1);
   }
   Serial.print("Ilu: ");
   Serial.println(ilumination);
 }
+
+textPosition_t customMsgEffectPosition = PA_CENTER;
+textEffect_t customMsgEffectIn = PA_PRINT;
+textEffect_t customMsgEffectOut = PA_SCROLL_LEFT;
+uint16_t customMsgEffectSpeed = 25;
+
+BLYNK_WRITE(VIRTUAL_EFFECT_TYPE)
+{
+  int effect = param.asInt() - 1;
+
+  Serial.print("Eff (In): ");
+  switch (effect)
+  {
+  case 0:
+    Serial.println("Left to rigth");
+    customMsgEffectPosition = PA_CENTER;
+    customMsgEffectIn = PA_PRINT;
+    customMsgEffectOut = PA_SCROLL_RIGHT;
+    break;
+  case 1:
+    Serial.println("Right to left");
+    customMsgEffectPosition = PA_CENTER;
+    customMsgEffectIn = PA_PRINT;
+    customMsgEffectOut = PA_SCROLL_LEFT;
+    break;
+  default: // 2
+    customMsgEffectPosition = PA_CENTER;
+    customMsgEffectIn = PA_PRINT;
+    customMsgEffectOut = PA_SCROLL_LEFT;
+    Serial.println("default");
+    break;
+  }
+}
+BLYNK_WRITE(VIRTUAL_EFFECT_SPEED)
+{
+  int speed = param.asInt();
+  if (speed <= 100 && speed >= 0)
+  {
+    int speedValue = map(speed, 0, 100, 0, 250);
+    customMsgEffectSpeed = speedValue;
+  }
+}
+
 // < Blynk functions />
 
 void setup()
 {
-  pinMode(2, OUTPUT);
-  pinMode(16, OUTPUT);
-  EEPROM.begin(128);
   Serial.begin(115200);
-  Blynk.begin(auth, ssid, pass);
-  dht.begin();
-
-  // To wait for above functions to start
-  delay(10);
-
-  // Recover custom message from memory
-  String msg = recoverMsg();
-  msg.toCharArray(msg_custom, 128);
+  delay(10); // To wait for above function to start
 
   // Initialize the dot display
   Serial.println("Initializing display...");
@@ -131,36 +278,49 @@ void setup()
     P.begin(2);
 
     // Zones Config
-    P.setZone(0, 0, 9);
-    P.setZone(1, 10, 15);
+    P.setZone(0, 0, 10);
+    P.setZone(1, 11, 15);
     P.setIntensity(0, 0);
     P.setIntensity(1, 0);
     P.displayZoneText(0, msg_custom, PA_CENTER, SPEED_TIME, 0, PA_PRINT, PA_SCROLL_LEFT);
     P.displayZoneText(1, msg_time, PA_CENTER, SPEED_TIME, PAUSE_TIME, PA_PRINT, PA_NO_EFFECT);
-    //P.addChar(0, '$', degC); // °C
 
     defaultFont = P.getFont(0);
 
-    P.setFont(1, special);
+    P.setFont(special);
   }
 
-  delay(100);
+  Serial.println("Initializing another dependences...");
+  pinMode(2, OUTPUT);
+  pinMode(16, OUTPUT);
+  EEPROM.begin(128);
+  Blynk.begin(auth, ssid, pass);
+  dht.begin();
+
+  // Recover custom message from memory
+  String msg = recoverMsg();
+  msg.toCharArray(msg_custom, 128);
+
+  delay(1000); // to wait display
   Serial.println("Ready");
 }
 
 void loop()
 {
   Blynk.run();
-  P.displayAnimate();
-  actDisplay0_run();
-  actDisplay1_run();
   readingDHT_run();
+  if (!isSleepTime())
+  {
+    P.displayAnimate();
+    actDisplayZone0_run();
+    actDisplayZone1_run();
+  }
 }
 
 // < MORE > //
 
 // RunWithoutDelay CODE
-void actDisplay0_run()
+void actDisplayZone1_run()
 {
   if (millis() - lastMoved >= 500)
   {
@@ -169,16 +329,18 @@ void actDisplay0_run()
     P.displayReset(1);
   }
 }
-void actDisplay1_run()
+void actDisplayZone0_run()
 {
   if (P.getZoneStatus(0) && (millis() - changeMSG >= holdTimeMSG))
   {
     switch (crrMsg)
     {
-    case 0: // Show date, humidity and temperature.
+    case 0:                       // Show date, humidity and temperature.
+      iconAnimation.setIconID(0); // set hourglass animation
+      lastMoved = 0;              // reset zone 1
       P.setFont(0, special);
       P.displayZoneText(0, msg_Date_and_DHT, PA_CENTER, SPEED_TIME, PAUSE_TIME, PA_SCROLL_DOWN, PA_NO_EFFECT);
-      holdTimeMSG = 8000; // animation time more 8 seconds
+      holdTimeMSG = 8500; // animation time more 8 seconds
       crrMsg++;
       break;
 
@@ -189,10 +351,12 @@ void actDisplay1_run()
       crrMsg++;
       break;
 
-    case 2: // Show custom message.
+    case 2:                       // Show custom message.
+      iconAnimation.setIconID(1); // Change icon to "IF" while show the custom message
+      lastMoved = 0;              // reset zone 1
       P.setFont(0, defaultFont);
-      P.displayZoneText(0, msg_custom, PA_CENTER, SPEED_TIME, 0, PA_PRINT, PA_SCROLL_LEFT);
-      P.setTextEffect(0, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
+      P.displayZoneText(0, msg_custom, customMsgEffectPosition, customMsgEffectSpeed, 0, customMsgEffectIn, customMsgEffectOut);
+      P.setTextEffect(0, customMsgEffectOut, customMsgEffectOut);
       holdTimeMSG = 0; // only animation time
       crrMsg = 0;
       break;
@@ -254,89 +418,14 @@ void buildMsg_time()
   else
     textIn += "0" + String(_second);
 
-  textIn += " ";
-  switch (vBarState)
-  {
-  case 0:
-    textIn += String("j");
-    vBarState++;
-    break;
-  case 1:
-    textIn += String("k");
-    vBarState++;
-    break;
-  case 2:
-    textIn += String("l");
-    vBarState++;
-    break;
-  case 3:
-    textIn += String("m");
-    vBarState++;
-    break;
-  case 4:
-    textIn += String("n");
-    vBarState++;
-    break;
-  case 5:
-    textIn += String("o");
-    vBarState++;
-    break;
-  case 6:
-    textIn += String("p");
-    vBarState++;
-    break;
-  case 7:
-    textIn += String("q");
-    vBarState++;
-    break;
-  case 8:
-    textIn += String("r");
-    vBarState++;
-    break;
-  case 9:
-    textIn += String("s");
-    vBarState++;
-    break;
-  case 10:
-    textIn += String("t");
-    vBarState++;
-    break;
-  case 11:
-    textIn += String("u");
-    vBarState++;
-    break;
-  case 12:
-    textIn += String("v");
-    vBarState++;
-    break;
-  case 13:
-    textIn += String("w");
-    vBarState++;
-    break;
-  case 14:
-    textIn += String("x");
-    vBarState++;
-    break;
-  case 15:
-    textIn += String("y");
-    vBarState++;
-    break;
-  case 16:
-    textIn += String("z");
-    vBarState++;
-    break;
-  default:
-    textIn += String("{");
-    vBarState = 0;
-    break;
-  }
+  textIn += iconAnimation.getNewIcon();
 
   for (int i = 0; i < 30; i++)
     msg_time[i] = textIn[i];
 }
 void buildMsg_custom(String *msgFromApp)
 {
-  String textIn = "  " + *msgFromApp + "  ";
+  String textIn = " " + *msgFromApp + "  ";
   for (int i = 0; i < 128; i++)
     msg_custom[i] = textIn[i];
 }
@@ -361,15 +450,18 @@ void buildMsg_DateAndDHT()
 
   textIn += "/" + String(year());
 
-  textIn += "   ";
+  textIn += " ";
 
   if (temperatureDHT > 0)
     textIn += "+";
   else if (temperatureDHT < 0)
     textIn += "-";
 
+  String temperatureTXT = String(temperatureDHT),
+         humidityTXT = String(humidityDHT);
+
   textIn +=
-      String(temperatureDHT).substring(0, -1) + "$   " + String(humidityDHT).substring(0, -1) + "%";
+      temperatureTXT.substring(0, temperatureTXT.length() - 1) + "& " + humidityTXT.substring(0, humidityTXT.length() - 1) + "%";
 
   for (int i = 0; i < 50; i++)
     msg_Date_and_DHT[i] = textIn[i];
