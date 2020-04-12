@@ -450,7 +450,7 @@ void buildMsg_time()
   textIn += " ";
   textIn += iconAnimation.getNewIcon();
 
-  for (int i = 0; i < 30; i++)
+  for (int i = 0; i < 11; i++)
     msg_time[i] = textIn[i];
 }
 void buildMsg_custom(String *msgFromApp)
@@ -493,7 +493,7 @@ void buildMsg_DateAndDHT()
   textIn +=
       temperatureTXT.substring(0, temperatureTXT.length() - 1) + "& " + humidityTXT.substring(0, humidityTXT.length() - 1) + "%";
 
-  for (int i = 0; i < 50; i++)
+  for (int i = 0; i < 25; i++)
     msg_Date_and_DHT[i] = textIn[i];
 }
 
