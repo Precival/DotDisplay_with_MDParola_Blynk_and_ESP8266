@@ -32,3 +32,6 @@ Customizing messages and effects in DotDisplay with BlynkApp
 
 <h3>Effect speed</h3>
 <img tittle="Efect speed" src="blynkApp/SpeedMSG.jpg" width="300px">
+
+<h3>Custom message</h3>
+<img tittle="Custom message" src="blynkApp/SendMSG.jpg" width="300px">
