@@ -138,7 +138,7 @@ public:
   }
 };
 
-// // // // / // //
+// /// // /// / /// // ///
 
 // < Global variables >
 // Display config
@@ -165,9 +165,9 @@ uint16_t customMsgEffectSpeed = 25;
 
 // Blynk config
 WidgetRTC rtc;
-char msg_time[30] = "";         // Time
+char msg_time[11] = "";         // Time
 char msg_custom[128] = "";      // Last message
-char msg_Date_and_DHT[50] = ""; // Date, temperature and humidity
+char msg_Date_and_DHT[25] = ""; // Date, temperature and humidity
 byte crrMsg = 0;
 
 // WIFI and BlynkAuth config
@@ -176,7 +176,7 @@ char ssid[] = "brisa-214346";
 char pass[] = "wf9ab383";
 
 // DHT config
-DHT dht(5, DHT22); //DHTPIN, DHTTYPE
+DHT dht(5, DHT22); // DHTPIN, DHTTYPE
 float temperatureDHT = 0,
       humidityDHT = 0;
 bool readedDHT = false;
@@ -201,7 +201,6 @@ IconAnimation iconAnimation;
 void actDisplayZone1_run();
 void actDisplayZone0_run();
 void readingDHT_run();
-
 // < Global functions />
 
 // < Blynk functions >
@@ -528,10 +527,11 @@ void recoverMsg()
   String(data).toCharArray(msg_custom, 128);
 }
 
-// 128 = powerMode /-/ 129>>132 effectin /-/ 133>>136 effectout /-/ 137>>140 effectspeed //
+// 128 = powerMode /-/ 129>>132 effectin /-/ 133>>136 effectout /-/ 137>>138 effectspeed //
+// 139>>142 ilumination
 void saveSettings()
 {
-  EEPROM.put(128, powerMode);            // 1 bite
+  EEPROM.put(128, powerMode);            // 1 bit
   EEPROM.put(129, customMsgEffectIn);    // 4 bytes
   EEPROM.put(133, customMsgEffectOut);   // 4 bytes
   EEPROM.put(137, customMsgEffectSpeed); // 2 bytes
@@ -547,7 +547,7 @@ void recoverSettings()
   EEPROM.get(137, customMsgEffectSpeed);
   EEPROM.get(139, ilumination);
 
-  //Applu ilumination
+  //Apply ilumination
   P.setIntensity(0, ilumination);
   P.setIntensity(1, ilumination);
 }
