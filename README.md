@@ -7,7 +7,7 @@ Customizing messages and effects in DotDisplay with BlynkApp
 <h2>Working</h2>
 <h3>Prototype</h3>
 
-[![Prototype](prototype/prototype.jpg)](https://youtu.be/S2vy08SAcQk "Prototype working!")
+[![Prototype](prototype/prototype.jpg)](https://youtu.be/S2vy08SAcQk "Click to watching the prototype working!")
   
 <h3>Protoboard</h3>
 <img tittle="protoboard" src="prototype/protoboard.png"  width="300px">

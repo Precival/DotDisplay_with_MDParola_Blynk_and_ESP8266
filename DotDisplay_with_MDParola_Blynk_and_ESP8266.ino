@@ -171,9 +171,9 @@ char msg_Date_and_DHT[25] = ""; // Date, temperature and humidity
 byte crrMsg = 0;
 
 // WIFI and BlynkAuth config
-char auth[] = "uCwWLBGxMAt7daJGOhiptFsa7cZadbwb";
-char ssid[] = "brisa-214346";
-char pass[] = "wf9ab383";
+char auth[] = "your auth from blynk";
+char ssid[] = "your SSID";
+char pass[] = "your password";
 
 // DHT config
 DHT dht(5, DHT22); // DHTPIN, DHTTYPE
