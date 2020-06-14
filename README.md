@@ -6,8 +6,10 @@ Customizing messages and effects in DotDisplay with BlynkApp
 
 <h2>Working</h2>
 <h3>Prototype</h3>
-<video tittle="prototype_Movie" src="prototype/prototype_movie.mp4" width="300px">
-<img tittle="prototype" src="prototype/prototype.jpg"  width="300px">
+
+[![Prototype](prototype/prototype.jpg)](https://youtu.be/S2vy08SAcQk "Prototype working!")
+  
+<h3>Protoboard</h3>
 <img tittle="protoboard" src="prototype/protoboard.png"  width="300px">
 
 <h2>Configing App</h2>
