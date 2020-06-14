@@ -5,7 +5,10 @@ Customizing messages and effects in DotDisplay with BlynkApp
 <img tittle="HomeApp" src="blynkApp/MAIN_1.jpg" width="300px">
 
 <h2>Working</h2>
-...
+<h3>Prototype</h3>
+<video tittle="prototype_Movie" src="prototype/prototype_movie.mp4" width="300px">
+<img tittle="prototype" src="prototype/prototype.jpg"  width="300px">
+<img tittle="protoboard" src="prototype/protoboard.png"  width="300px">
 
 <h2>Configing App</h2>
 
